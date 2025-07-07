@@ -67,13 +67,33 @@ class ScreenshotExcelApp:
         self.root.iconify()
         self.root.update()
         time.sleep(0.5)
-        # 画面全体をPillowのImageGrabでキャプチャ
+        # ブラウザウィンドウを特定（画面内で最前面のブラウザ）
+        import pygetwindow as gw
+        browser_keywords = ['chrome', 'edge', 'firefox', 'opera', 'safari', 'brave']
+        browser_window = None
+        for w in gw.getAllWindows():
+            if not w.visible:
+                continue
+            title = w.title.lower()
+            if not any(k in title for k in browser_keywords):
+                continue
+            # この画面内にあるウィンドウのみ
+            if (w.left >= target_screen.x and w.left < target_screen.x + target_screen.width and
+                w.top >= target_screen.y and w.top < target_screen.y + target_screen.height):
+                browser_window = w
+                break
+        if not browser_window:
+            self.root.deiconify()
+            self.root.update()
+            messagebox.showerror('エラー', 'この画面内にブラウザウィンドウが見つかりません')
+            return
+        # ブラウザウィンドウの領域をキャプチャ
         from PIL import ImageGrab, Image
-        bbox = (target_screen.x, target_screen.y, target_screen.x + target_screen.width, target_screen.y + target_screen.height)
+        bbox = (browser_window.left, browser_window.top, browser_window.left + browser_window.width, browser_window.top + browser_window.height)
         img = ImageGrab.grab(bbox)
         # アドレスバーより下だけ切り出し（仮に上から80px下を切り取る）
         addressbar_height = 80  # 必要に応じて調整
-        img = img.crop((0, addressbar_height, target_screen.width, target_screen.height))
+        img = img.crop((0, addressbar_height, browser_window.width, browser_window.height))
         # O列右端に合わせてリサイズ（O列は15列目、幅は約15*64=960px）
         target_width = 960
         if img.width > target_width:
