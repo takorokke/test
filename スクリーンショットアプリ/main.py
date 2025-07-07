@@ -35,7 +35,7 @@ class ScreenshotExcelApp:
         self.wb = self.excel.Workbooks.Add()
         self.ws = self.wb.Worksheets(1)
         self.ws.Name = 'Sheet1'
-        self.current_row = 2
+        self.current_row = 4  # 3行空けて4行目から貼り付け
 
     def take_screenshot(self):
         # アプリウィンドウの位置とサイズを取得
@@ -78,7 +78,7 @@ class ScreenshotExcelApp:
         idx = self.wb.Worksheets.Count
         new_sheet.Name = f'Sheet{idx}'
         self.ws = new_sheet
-        self.current_row = 2
+        self.current_row = 4  # 新しいシートも4行目から貼り付け
 
 def main():
     root = tk.Tk()
