@@ -88,9 +88,26 @@ class ScreenshotExcelApp:
             self.root.update()
             messagebox.showerror('エラー', 'この画面内にブラウザウィンドウが見つかりません')
             return
+        # pywinautoでクライアント領域（Web表示部分）を取得
+        try:
+            from pywinauto import Application
+            app = Application(backend="uia").connect(handle=browser_window._hWnd)
+            dlg = app.window(handle=browser_window._hWnd)
+            child = None
+            for c in dlg.children():
+                cname = c.friendly_class_name().lower()
+                if 'render' in cname or 'chrome' in cname or 'tabwindow' in cname or 'content' in cname:
+                    child = c
+                    break
+            if child:
+                rect = child.rectangle()
+                bbox = (rect.left, rect.top, rect.right - rect.left, rect.bottom - rect.top)
+            else:
+                bbox = (browser_window.left, browser_window.top, browser_window.width, browser_window.height)
+        except Exception as e:
+            bbox = (browser_window.left, browser_window.top, browser_window.width, browser_window.height)
         # pyautoguiでキャプチャ（黒画像対策）
         import pyautogui
-        bbox = (browser_window.left, browser_window.top, browser_window.width, browser_window.height)
         img = pyautogui.screenshot(region=bbox)
         # O列右端に合わせてリサイズ（O列は15列目、幅は約15*64=960px）
         target_width = 960
