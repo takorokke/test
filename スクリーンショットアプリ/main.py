@@ -148,6 +148,8 @@ class ScreenshotExcelApp:
         os.remove(tmpfile)
         self.root.deiconify()
         self.root.update()
+        # スクリーンショット貼り付け後、次の行に進める
+        self.current_row += self.last_img_height + 1
 
     def take_screenshot_right(self):
         # アプリウィンドウの中央座標を取得
