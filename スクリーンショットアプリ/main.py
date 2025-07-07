@@ -44,33 +44,42 @@ class ScreenshotExcelApp:
         app_y = self.root.winfo_rooty()
         app_w = self.root.winfo_width()
         app_h = self.root.winfo_height()
-        app_rect = (app_x, app_y, app_x + app_w, app_y + app_h)
+        # ボタンの真下の座標（アプリ中央下部）
+        target_x = app_x + app_w // 2
+        target_y = app_y + app_h + 5  # アプリ下端より少し下
 
-        # アプリウィンドウと重なる他のウィンドウをリストアップ
-        candidates = []
+        # 真下にあるウィンドウを特定
+        target_window = None
         for w in gw.getAllWindows():
             if not w.visible or w._hWnd == self.root.winfo_id():
                 continue
             wx1, wy1, wx2, wy2 = w.left, w.top, w.left + w.width, w.top + w.height
-            # 重なり判定
-            if (wx1 < app_rect[2] and wx2 > app_rect[0] and wy1 < app_rect[3] and wy2 > app_rect[1]):
-                area = w.width * w.height
-                candidates.append((area, w))
-        if not candidates:
-            messagebox.showerror('エラー', '下にあるウィンドウが見つかりません')
+            if wx1 <= target_x <= wx2 and wy1 <= target_y <= wy2:
+                target_window = w
+                break
+        if not target_window:
+            messagebox.showerror('エラー', 'ボタンの真下にあるウィンドウが見つかりません')
             return
-        # 一番大きいウィンドウを選択
-        candidates.sort(reverse=True)
-        win = candidates[0][1]
         # スクリーンショット
-        left, top, width, height = win.left, win.top, win.width, win.height
+        left, top, width, height = target_window.left, target_window.top, target_window.width, target_window.height
         img = pyautogui.screenshot(region=(left, top, width, height))
+        # G列右端に合わせてリサイズ（G列は約7列目、幅は約7*8.43=59.01ポイント=約780px）
+        target_width = 780
+        if width > target_width:
+            from PIL import Image
+            img = img.resize((target_width, int(height * target_width / width)), Image.LANCZOS)
         tmpfile = os.path.join(tempfile.gettempdir(), f'ss_{int(time.time())}.png')
         img.save(tmpfile)
         # Excelに画像貼り付け
-        self.ws.Pictures().Insert(tmpfile).Select()
+        pic = self.ws.Pictures().Insert(tmpfile)
+        pic.Select()
         self.excel.Selection.Top = self.ws.Rows(self.current_row).Top
-        self.current_row += 25
+        self.excel.Selection.Left = self.ws.Columns(1).Left  # A列左端
+        # 画像の高さを取得し、次回貼り付け位置を自動調整
+        img_height = img.height if hasattr(img, 'height') else 400
+        row_height = 20  # Excelの1行の高さ（おおよそ）
+        add_rows = int(img_height / row_height) + 3  # 画像の高さ分＋3行空ける
+        self.current_row += add_rows
         os.remove(tmpfile)
 
     def next_sheet(self):
