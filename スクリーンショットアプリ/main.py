@@ -49,7 +49,7 @@ class ScreenshotExcelApp:
         # アプリウィンドウと重なる他のウィンドウをリストアップ
         candidates = []
         for w in gw.getAllWindows():
-            if not w.isVisible or w._hWnd == self.root.winfo_id():
+            if not w.visible or w._hWnd == self.root.winfo_id():
                 continue
             wx1, wy1, wx2, wy2 = w.left, w.top, w.left + w.width, w.top + w.height
             # 重なり判定
