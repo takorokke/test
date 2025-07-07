@@ -55,6 +55,8 @@ class ScreenshotExcelApp:
         self.current_row = 4  # 3行空けて4行目から貼り付け
 
     def take_screenshot(self):
+        # 常にA列から貼り付け開始
+        self.current_col = 1
         # アプリウィンドウの中央座標を取得
         self.root.update_idletasks()
         app_x = self.root.winfo_rootx()
