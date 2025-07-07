@@ -1,3 +1,16 @@
+import sys
+from unittest import mock
+# テスト時にWindows依存/GUI系モジュールを自動でモック化
+if 'pytest' in sys.modules or 'unittest' in sys.modules:
+    sys.modules['pyautogui'] = mock.Mock()
+    sys.modules['screeninfo'] = mock.Mock()
+    sys.modules['pywinauto'] = mock.Mock()
+    sys.modules['win32com'] = mock.Mock()
+    sys.modules['win32com.client'] = mock.Mock()
+    sys.modules['pygetwindow'] = mock.Mock()
+    import tkinter
+    tkinter.Tk = mock.Mock()
+    tkinter.Button = mock.Mock()
 import tkinter as tk
 from tkinter import messagebox
 import pyautogui
@@ -125,10 +138,10 @@ class ScreenshotExcelApp:
         pic.Select()
         self.excel.Selection.Top = self.ws.Rows(self.current_row).Top
         self.excel.Selection.Left = self.ws.Columns(self.current_col).Left
-        img_height = img.height if hasattr(img, 'height') else 400
-        row_height = 20
-        add_rows = int(img_height / row_height) + 3
-        self.current_row += add_rows
+        self.excel.Selection.Top = self.ws.Rows(self.current_row).Top
+        self.last_img_row = self.current_row
+        self.last_img_height = int(img.height / 20)  # 1行=約20px
+        self.right_row = self.current_row
         self.last_img_col = 1 + int(img.width / 64)  # 1列=約64px
         # 右貼り付け用の行位置をリセット
         self.right_row = self.current_row
@@ -217,17 +230,19 @@ class ScreenshotExcelApp:
         img.save(tmpfile)
         # 直前の画像の右側に数列空けて貼り付け
         col_gap = 3  # 画像間の列の空き
-        # 右貼り付け用の行位置を管理
-        if not hasattr(self, 'right_row') or self.right_row != self.current_row:
-            self.right_row = self.current_row
+        if not hasattr(self, 'right_row') or self.right_row != getattr(self, 'last_img_row', 4):
+            self.right_row = getattr(self, 'last_img_row', 4)
             self.last_img_col = 1
         self.current_col = self.last_img_col + col_gap
+        self.current_row = self.right_row
         pic = self.ws.Pictures().Insert(tmpfile)
         pic.Select()
-        self.excel.Selection.Top = self.ws.Rows(self.right_row).Top  # 右貼り付け用の行
+        self.excel.Selection.Top = self.ws.Rows(self.current_row).Top
         self.excel.Selection.Left = self.ws.Columns(self.current_col).Left
         img_height = img.height if hasattr(img, 'height') else 400
         self.last_img_col = self.current_col + int(img.width / 64)
+        self.last_img_row = self.current_row
+        self.last_img_height = int(img_height / 20)
         os.remove(tmpfile)
         self.root.deiconify()
         self.root.update()
