@@ -67,14 +67,15 @@ class ScreenshotExcelApp:
         self.root.iconify()
         self.root.update()
         time.sleep(0.5)
-        # 画面全体をキャプチャ
-        img = pyautogui.screenshot(region=(target_screen.x, target_screen.y, target_screen.width, target_screen.height))
+        # 画面全体をPillowのImageGrabでキャプチャ
+        from PIL import ImageGrab, Image
+        bbox = (target_screen.x, target_screen.y, target_screen.x + target_screen.width, target_screen.y + target_screen.height)
+        img = ImageGrab.grab(bbox)
         # アドレスバーより下だけ切り出し（仮に上から80px下を切り取る）
         addressbar_height = 80  # 必要に応じて調整
-        from PIL import Image
         img = img.crop((0, addressbar_height, target_screen.width, target_screen.height))
-        # M列右端に合わせてリサイズ（M列は13列目、幅は約13*64=832px）
-        target_width = 832
+        # O列右端に合わせてリサイズ（O列は15列目、幅は約15*64=960px）
+        target_width = 960
         if img.width > target_width:
             img = img.resize((target_width, int(img.height * target_width / img.width)), Image.LANCZOS)
         tmpfile = os.path.join(tempfile.gettempdir(), f'ss_{int(time.time())}.png')
