@@ -14,12 +14,13 @@ class ScreenshotExcelApp:
     def __init__(self, root):
         self.root = root
         self.root.title('スクリーンショットアプリ')
-        self.root.geometry('300x150')
+        self.root.geometry('500x200')  # ウィンドウサイズを大きく
         self.excel = None
         self.wb = None
         self.ws = None
         self.current_row = 4
         self.current_col = 1  # 1=A列
+        self.last_img_col = 1
         self.setup_excel()
         btn1 = tk.Button(root, text='スクリーンショット', font=('Arial', 14), width=20, command=self.take_screenshot)
         btn1.pack(pady=5)
@@ -128,6 +129,7 @@ class ScreenshotExcelApp:
         row_height = 20
         add_rows = int(img_height / row_height) + 3
         self.current_row += add_rows
+        self.last_img_col = 1 + int(img.width / 64)  # 1列=約64px
         os.remove(tmpfile)
         self.root.deiconify()
         self.root.update()
@@ -213,19 +215,13 @@ class ScreenshotExcelApp:
         img.save(tmpfile)
         # 直前の画像の右側に数列空けて貼り付け
         col_gap = 3  # 画像間の列の空き
-        if hasattr(self, 'last_img_col'):
-            self.current_col = self.last_img_col + col_gap
-        else:
-            self.current_col = 1
+        self.current_col = self.last_img_col + col_gap
         pic = self.ws.Pictures().Insert(tmpfile)
         pic.Select()
-        self.excel.Selection.Top = self.ws.Rows(self.current_row).Top
+        self.excel.Selection.Top = self.ws.Rows(4).Top  # 常に4行目に貼る
         self.excel.Selection.Left = self.ws.Columns(self.current_col).Left
         img_height = img.height if hasattr(img, 'height') else 400
-        row_height = 20
-        add_rows = int(img_height / row_height) + 3
-        self.current_row += add_rows
-        self.last_img_col = self.current_col + int(img.width / 64)  # 1列=約64px
+        self.last_img_col = self.current_col + int(img.width / 64)
         os.remove(tmpfile)
         self.root.deiconify()
         self.root.update()
