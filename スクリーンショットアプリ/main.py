@@ -48,23 +48,31 @@ class ScreenshotExcelApp:
         target_x = app_x + app_w // 2
         target_y = app_y + app_h + 5  # アプリ下端より少し下
 
-        # 真下にあるウィンドウを特定
+        # ブラウザウィンドウのみを候補に
+        browser_keywords = ['chrome', 'edge', 'firefox', 'opera', 'safari', 'brave']
         target_window = None
         for w in gw.getAllWindows():
             if not w.visible or w._hWnd == self.root.winfo_id():
+                continue
+            title = w.title.lower()
+            if not any(k in title for k in browser_keywords):
                 continue
             wx1, wy1, wx2, wy2 = w.left, w.top, w.left + w.width, w.top + w.height
             if wx1 <= target_x <= wx2 and wy1 <= target_y <= wy2:
                 target_window = w
                 break
         if not target_window:
-            messagebox.showerror('エラー', 'ボタンの真下にあるウィンドウが見つかりません')
+            messagebox.showerror('エラー', 'ボタンの真下にあるブラウザウィンドウが見つかりません')
             return
+        # アプリを一時的に最小化して下のウィンドウを露出
+        self.root.iconify()
+        self.root.update()
+        time.sleep(0.5)  # 最小化反映待ち
         # スクリーンショット
         left, top, width, height = target_window.left, target_window.top, target_window.width, target_window.height
         img = pyautogui.screenshot(region=(left, top, width, height))
-        # G列右端に合わせてリサイズ（G列は約7列目、幅は約7*8.43=59.01ポイント=約780px）
-        target_width = 780
+        # M列右端に合わせてリサイズ（M列は13列目、幅は約13*64=832px）
+        target_width = 832
         if width > target_width:
             from PIL import Image
             img = img.resize((target_width, int(height * target_width / width)), Image.LANCZOS)
@@ -81,6 +89,9 @@ class ScreenshotExcelApp:
         add_rows = int(img_height / row_height) + 3  # 画像の高さ分＋3行空ける
         self.current_row += add_rows
         os.remove(tmpfile)
+        # アプリを元に戻す
+        self.root.deiconify()
+        self.root.update()
 
     def next_sheet(self):
         new_sheet = self.wb.Worksheets.Add(After=self.wb.Worksheets(self.wb.Worksheets.Count))
