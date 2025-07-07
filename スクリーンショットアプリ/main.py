@@ -67,7 +67,7 @@ class ScreenshotExcelApp:
         self.root.iconify()
         self.root.update()
         time.sleep(0.5)
-        # ブラウザウィンドウを特定（画面内で最前面のブラウザ）
+        # ブラウザウィンドウを特定（ウィンドウの中心がこの画面内にあるものを優先）
         import pygetwindow as gw
         browser_keywords = ['chrome', 'edge', 'firefox', 'opera', 'safari', 'brave']
         browser_window = None
@@ -77,9 +77,11 @@ class ScreenshotExcelApp:
             title = w.title.lower()
             if not any(k in title for k in browser_keywords):
                 continue
-            # この画面内にあるウィンドウのみ
-            if (w.left >= target_screen.x and w.left < target_screen.x + target_screen.width and
-                w.top >= target_screen.y and w.top < target_screen.y + target_screen.height):
+            # ウィンドウの中心座標
+            wx_center = w.left + w.width // 2
+            wy_center = w.top + w.height // 2
+            if (target_screen.x <= wx_center < target_screen.x + target_screen.width and
+                target_screen.y <= wy_center < target_screen.y + target_screen.height):
                 browser_window = w
                 break
         if not browser_window:
