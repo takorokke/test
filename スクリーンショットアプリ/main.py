@@ -57,6 +57,9 @@ class ScreenshotExcelApp:
     def take_screenshot(self):
         # 常にA列から貼り付け開始
         self.current_col = 1
+        # 直前の画像の下の行に進める（右貼り付け後も必ず下に進む）
+        if hasattr(self, 'last_img_row') and hasattr(self, 'last_img_height'):
+            self.current_row = self.last_img_row + self.last_img_height + 1
         # アプリウィンドウの中央座標を取得
         self.root.update_idletasks()
         app_x = self.root.winfo_rootx()
