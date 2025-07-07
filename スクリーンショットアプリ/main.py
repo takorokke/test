@@ -38,58 +38,57 @@ class ScreenshotExcelApp:
         self.current_row = 4  # 3行空けて4行目から貼り付け
 
     def take_screenshot(self):
-        # アプリウィンドウの位置とサイズを取得
+        # アプリウィンドウの中央座標を取得
         self.root.update_idletasks()
         app_x = self.root.winfo_rootx()
         app_y = self.root.winfo_rooty()
         app_w = self.root.winfo_width()
         app_h = self.root.winfo_height()
-        # ボタンの真下の座標（アプリ中央下部）
-        target_x = app_x + app_w // 2
-        target_y = app_y + app_h + 5  # アプリ下端より少し下
+        center_x = app_x + app_w // 2
+        center_y = app_y + app_h // 2
 
-        # ブラウザウィンドウのみを候補に
-        browser_keywords = ['chrome', 'edge', 'firefox', 'opera', 'safari', 'brave']
-        target_window = None
-        for w in gw.getAllWindows():
-            if not w.visible or w._hWnd == self.root.winfo_id():
-                continue
-            title = w.title.lower()
-            if not any(k in title for k in browser_keywords):
-                continue
-            wx1, wy1, wx2, wy2 = w.left, w.top, w.left + w.width, w.top + w.height
-            if wx1 <= target_x <= wx2 and wy1 <= target_y <= wy2:
-                target_window = w
-                break
-        if not target_window:
-            messagebox.showerror('エラー', 'ボタンの真下にあるブラウザウィンドウが見つかりません')
+        # すべてのディスプレイ情報を取得
+        try:
+            import screeninfo
+            screens = screeninfo.get_monitors()
+        except ImportError:
+            messagebox.showerror('エラー', 'screeninfoパッケージが必要です。\npip install screeninfo を実行してください。')
             return
-        # アプリを一時的に最小化して下のウィンドウを露出
+        # アプリが表示されているディスプレイを特定
+        target_screen = None
+        for s in screens:
+            if s.x <= center_x < s.x + s.width and s.y <= center_y < s.y + s.height:
+                target_screen = s
+                break
+        if not target_screen:
+            messagebox.showerror('エラー', 'アプリが表示されている画面が見つかりません')
+            return
+        # アプリを一時的に最小化
         self.root.iconify()
         self.root.update()
-        time.sleep(0.5)  # 最小化反映待ち
-        # スクリーンショット
-        left, top, width, height = target_window.left, target_window.top, target_window.width, target_window.height
-        img = pyautogui.screenshot(region=(left, top, width, height))
+        time.sleep(0.5)
+        # 画面全体をキャプチャ
+        img = pyautogui.screenshot(region=(target_screen.x, target_screen.y, target_screen.width, target_screen.height))
+        # アドレスバーより下だけ切り出し（仮に上から80px下を切り取る）
+        addressbar_height = 80  # 必要に応じて調整
+        from PIL import Image
+        img = img.crop((0, addressbar_height, target_screen.width, target_screen.height))
         # M列右端に合わせてリサイズ（M列は13列目、幅は約13*64=832px）
         target_width = 832
-        if width > target_width:
-            from PIL import Image
-            img = img.resize((target_width, int(height * target_width / width)), Image.LANCZOS)
+        if img.width > target_width:
+            img = img.resize((target_width, int(img.height * target_width / img.width)), Image.LANCZOS)
         tmpfile = os.path.join(tempfile.gettempdir(), f'ss_{int(time.time())}.png')
         img.save(tmpfile)
         # Excelに画像貼り付け
         pic = self.ws.Pictures().Insert(tmpfile)
         pic.Select()
         self.excel.Selection.Top = self.ws.Rows(self.current_row).Top
-        self.excel.Selection.Left = self.ws.Columns(1).Left  # A列左端
-        # 画像の高さを取得し、次回貼り付け位置を自動調整
+        self.excel.Selection.Left = self.ws.Columns(1).Left
         img_height = img.height if hasattr(img, 'height') else 400
-        row_height = 20  # Excelの1行の高さ（おおよそ）
-        add_rows = int(img_height / row_height) + 3  # 画像の高さ分＋3行空ける
+        row_height = 20
+        add_rows = int(img_height / row_height) + 3
         self.current_row += add_rows
         os.remove(tmpfile)
-        # アプリを元に戻す
         self.root.deiconify()
         self.root.update()
 
