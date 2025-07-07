@@ -1,7 +1,7 @@
 import sys
 from unittest import mock
-# テスト時にWindows依存/GUI系モジュールを自動でモック化
-if 'pytest' in sys.modules or 'unittest' in sys.modules:
+# テスト時のみWindows依存/GUI系モジュールを自動でモック化
+if not (__name__ == '__main__'):
     sys.modules['pyautogui'] = mock.Mock()
     sys.modules['screeninfo'] = mock.Mock()
     sys.modules['pywinauto'] = mock.Mock()
