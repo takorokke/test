@@ -130,6 +130,8 @@ class ScreenshotExcelApp:
         add_rows = int(img_height / row_height) + 3
         self.current_row += add_rows
         self.last_img_col = 1 + int(img.width / 64)  # 1列=約64px
+        # 右貼り付け用の行位置をリセット
+        self.right_row = self.current_row
         os.remove(tmpfile)
         self.root.deiconify()
         self.root.update()
@@ -215,10 +217,14 @@ class ScreenshotExcelApp:
         img.save(tmpfile)
         # 直前の画像の右側に数列空けて貼り付け
         col_gap = 3  # 画像間の列の空き
+        # 右貼り付け用の行位置を管理
+        if not hasattr(self, 'right_row') or self.right_row != self.current_row:
+            self.right_row = self.current_row
+            self.last_img_col = 1
         self.current_col = self.last_img_col + col_gap
         pic = self.ws.Pictures().Insert(tmpfile)
         pic.Select()
-        self.excel.Selection.Top = self.ws.Rows(4).Top  # 常に4行目に貼る
+        self.excel.Selection.Top = self.ws.Rows(self.right_row).Top  # 右貼り付け用の行
         self.excel.Selection.Left = self.ws.Columns(self.current_col).Left
         img_height = img.height if hasattr(img, 'height') else 400
         self.last_img_col = self.current_col + int(img.width / 64)
