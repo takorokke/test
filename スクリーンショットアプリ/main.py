@@ -67,7 +67,7 @@ class ScreenshotExcelApp:
         self.root.iconify()
         self.root.update()
         time.sleep(0.5)
-        # ブラウザウィンドウを特定（ウィンドウの中心がこの画面内にあるものを優先）
+        # ブラウザウィンドウを特定（中心座標がこの画面内にあるものを優先）
         import pygetwindow as gw
         browser_keywords = ['chrome', 'edge', 'firefox', 'opera', 'safari', 'brave']
         browser_window = None
@@ -77,7 +77,6 @@ class ScreenshotExcelApp:
             title = w.title.lower()
             if not any(k in title for k in browser_keywords):
                 continue
-            # ウィンドウの中心座標
             wx_center = w.left + w.width // 2
             wy_center = w.top + w.height // 2
             if (target_screen.x <= wx_center < target_screen.x + target_screen.width and
@@ -89,16 +88,14 @@ class ScreenshotExcelApp:
             self.root.update()
             messagebox.showerror('エラー', 'この画面内にブラウザウィンドウが見つかりません')
             return
-        # ブラウザウィンドウの領域をキャプチャ
-        from PIL import ImageGrab, Image
-        bbox = (browser_window.left, browser_window.top, browser_window.left + browser_window.width, browser_window.top + browser_window.height)
-        img = ImageGrab.grab(bbox)
-        # アドレスバーより下だけ切り出し（仮に上から80px下を切り取る）
-        addressbar_height = 80  # 必要に応じて調整
-        img = img.crop((0, addressbar_height, browser_window.width, browser_window.height))
+        # pyautoguiでキャプチャ（黒画像対策）
+        import pyautogui
+        bbox = (browser_window.left, browser_window.top, browser_window.width, browser_window.height)
+        img = pyautogui.screenshot(region=bbox)
         # O列右端に合わせてリサイズ（O列は15列目、幅は約15*64=960px）
         target_width = 960
         if img.width > target_width:
+            from PIL import Image
             img = img.resize((target_width, int(img.height * target_width / img.width)), Image.LANCZOS)
         tmpfile = os.path.join(tempfile.gettempdir(), f'ss_{int(time.time())}.png')
         img.save(tmpfile)

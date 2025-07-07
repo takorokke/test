@@ -2,3 +2,4 @@ pygetwindow
 pywin32
 pillow
 screeninfo
+pywinauto
