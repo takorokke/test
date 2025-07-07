@@ -49,9 +49,18 @@ class ScreenshotExcelApp:
             return
         self.excel = win32com.client.Dispatch('Excel.Application')
         self.excel.Visible = True
-        self.wb = self.excel.Workbooks.Add()
-        self.ws = self.wb.Worksheets(1)
-        self.ws.Name = 'Sheet1'
+        # 起動時に既存ファイルを選択するか新規作成するか選ばせる
+        file_path = tkinter.filedialog.askopenfilename(
+            title='既存のExcelファイルを選択（新規作成の場合はキャンセル）',
+            filetypes=[('Excel Files', '*.xlsx;*.xlsm;*.xls')]
+        )
+        if file_path:
+            self.wb = self.excel.Workbooks.Open(file_path)
+            self.ws = self.wb.Worksheets(1)
+        else:
+            self.wb = self.excel.Workbooks.Add()
+            self.ws = self.wb.Worksheets(1)
+            self.ws.Name = 'Sheet1'
         self.current_row = 4  # 3行空けて4行目から貼り付け
 
     def take_screenshot(self):
