@@ -38,22 +38,39 @@ class ScreenshotExcelApp:
         self.current_row = 2
 
     def take_screenshot(self):
-        # Chromeウィンドウ取得
-        chrome_windows = [w for w in gw.getAllWindows() if 'chrome' in w.title.lower() and w.isActive]
-        if not chrome_windows:
-            messagebox.showerror('エラー', 'アクティブなChromeウィンドウが見つかりません')
+        # アプリウィンドウの位置とサイズを取得
+        self.root.update_idletasks()
+        app_x = self.root.winfo_rootx()
+        app_y = self.root.winfo_rooty()
+        app_w = self.root.winfo_width()
+        app_h = self.root.winfo_height()
+        app_rect = (app_x, app_y, app_x + app_w, app_y + app_h)
+
+        # アプリウィンドウと重なる他のウィンドウをリストアップ
+        candidates = []
+        for w in gw.getAllWindows():
+            if not w.isVisible or w._hWnd == self.root.winfo_id():
+                continue
+            wx1, wy1, wx2, wy2 = w.left, w.top, w.left + w.width, w.top + w.height
+            # 重なり判定
+            if (wx1 < app_rect[2] and wx2 > app_rect[0] and wy1 < app_rect[3] and wy2 > app_rect[1]):
+                area = w.width * w.height
+                candidates.append((area, w))
+        if not candidates:
+            messagebox.showerror('エラー', '下にあるウィンドウが見つかりません')
             return
-        win = chrome_windows[0]
-        # ウィンドウ位置・サイズ取得
-        left, top, width, height = win.left, win.top, win.width, win.height
+        # 一番大きいウィンドウを選択
+        candidates.sort(reverse=True)
+        win = candidates[0][1]
         # スクリーンショット
+        left, top, width, height = win.left, win.top, win.width, win.height
         img = pyautogui.screenshot(region=(left, top, width, height))
         tmpfile = os.path.join(tempfile.gettempdir(), f'ss_{int(time.time())}.png')
         img.save(tmpfile)
         # Excelに画像貼り付け
         self.ws.Pictures().Insert(tmpfile).Select()
         self.excel.Selection.Top = self.ws.Rows(self.current_row).Top
-        self.current_row += 25  # 画像の高さ分だけ行を下げる
+        self.current_row += 25
         os.remove(tmpfile)
 
     def next_sheet(self):
